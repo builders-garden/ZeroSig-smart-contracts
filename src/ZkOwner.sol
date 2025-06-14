@@ -7,12 +7,14 @@ contract ZkOwner is ISignatureValidator {
   address public safeProxyAddress;
   bytes public singersInitCode;
   bool public isInitialized;
+  uint256 public threshold;
 
-  function initialize(address _safeProxyAddress, bytes memory _singersInitCode) external {
+  function initialize(address _safeProxyAddress, bytes memory _singersInitCode, uint256 _threshold) external {
     require(!isInitialized, "ZkOwner: already initialized");
     safeProxyAddress = _safeProxyAddress;
     singersInitCode = _singersInitCode;
     isInitialized = true;
+    threshold = _threshold;
   }
 
   function isValidSignature(
