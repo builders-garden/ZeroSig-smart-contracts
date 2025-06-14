@@ -2,26 +2,12 @@
 pragma solidity ^0.8.17;
 
 import { SafeProxyFactory } from "./Safe/SafeProxyFactory.sol";
-
-/**
- * @title Create2Factory
- * @dev Factory contract for deploying contracts using CREATE2 opcode
- * @notice This contract allows for deterministic contract deployment
- */
-interface IZkOwner {
-  function init(
-    address _owner,
-    address _endpointAddress,
-    address[] memory _stargateAddresses,
-    address[] memory _tokenAddresses,
-    address _portalRouterAddress,
-    uint256 _stargateFee
-  ) external;
-}
+import {SafeProxy} from "./Safe/SafeProxy.sol";
+import {ZkOwner} from "./ZkOwner.sol";
 
 contract ZkOwnerFactory {
   // Events
-  event ContractDeployed(address indexed deployedAddress, bytes32 indexed salt);
+  event ContractDeployed(address indexed safeProxyAddress, address indexed deployedAddress, bytes32 indexed salt);
   event DeploymentFailed(bytes32 indexed salt, string reason);
 
   bytes public implBytecode;
@@ -39,6 +25,7 @@ contract ZkOwnerFactory {
     safeFallbackHandlerAddress = _safeFallbackHandlerAddress;
   }
 
+  //for testing purposes
   function setBytecode(bytes memory _implBytecode) external {
     implBytecode = _implBytecode;
   }
@@ -49,7 +36,7 @@ contract ZkOwnerFactory {
    * @return deployedAddress The address of the deployed contract
    */
   function deploy(
-    bytes32 initCode
+    bytes memory initCode
   ) public returns (address deployedAddress) /*OnlySigner*/ {
     nonce++;
 
@@ -85,12 +72,19 @@ contract ZkOwnerFactory {
     );
 
     // Deploy the SafeProxy
-    SafeProxyFactory(safeProxyFactoryAddress).createProxyWithNonce(
+    SafeProxy safeProxy = SafeProxyFactory(safeProxyFactoryAddress).createProxyWithNonce(
       deployedAddress,
       safeProxyInitCode,
       0
     );
+    address safeProxyAddress = address(safeProxy);
+    require(safeProxyAddress != address(0), "ZkOwnerFactory: safe proxy deployment failed");
 
-    emit ContractDeployed(deployedAddress, salt);
+    // Initialize ZkOwner
+    ZkOwner zkOwner = ZkOwner(deployedAddress);
+    zkOwner.initialize(safeProxyAddress, initCode);
+    require(zkOwner.isInitialized(), "ZkOwnerFactory: zk owner initialization failed");
+
+    emit ContractDeployed(safeProxyAddress, deployedAddress, salt);
   }
 }

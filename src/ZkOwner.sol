@@ -5,9 +5,14 @@ import { ISignatureValidator } from "./Safe/ISignatureValidator.sol";
 
 contract ZkOwner is ISignatureValidator {
   address public safeProxyAddress;
+  bytes public singersInitCode;
+  bool public isInitialized;
 
-  function initialize(address _safeProxyAddress) external {
+  function initialize(address _safeProxyAddress, bytes memory _singersInitCode) external {
+    require(!isInitialized, "ZkOwner: already initialized");
     safeProxyAddress = _safeProxyAddress;
+    singersInitCode = _singersInitCode;
+    isInitialized = true;
   }
 
   function isValidSignature(
@@ -36,5 +41,5 @@ contract ZkOwner is ISignatureValidator {
     }
     return abi.decode(result, (uint256));
   }
-  
+
 }
