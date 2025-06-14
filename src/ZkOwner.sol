@@ -3,24 +3,46 @@ pragma solidity ^0.8.17;
 
 import { ISignatureValidator } from "./Safe/ISignatureValidator.sol";
 
+
+interface IVerifier {
+    function verify(bytes calldata _proof, bytes32[] calldata _publicInputs) external view returns (bool);
+}
+
 contract ZkOwner is ISignatureValidator {
   address public safeProxyAddress;
-  bytes public singersInitCode;
+  address public verifier;
   bool public isInitialized;
   uint256 public threshold;
+  bytes32[] public identifiers;
+  bytes32 public hashed_identifiers;
 
-  function initialize(address _safeProxyAddress, bytes memory _singersInitCode, uint256 _threshold) external {
+  function initialize(
+    address _safeProxyAddress, 
+    uint256 _threshold, 
+    address _verifier, 
+    bytes32[] memory _identifiers
+    ) external {
     require(!isInitialized, "ZkOwner: already initialized");
     safeProxyAddress = _safeProxyAddress;
-    singersInitCode = _singersInitCode;
+
     isInitialized = true;
     threshold = _threshold;
+    verifier = _verifier;
+    identifiers = _identifiers;
+    hashed_identifiers = keccak256(abi.encodePacked(identifiers));
   }
 
   function isValidSignature(
     bytes32 _hash,
-    bytes memory _signature
+    bytes memory _signature // ( calldata?)
   ) external view override returns (bytes4) {
+    
+    (bytes memory proof, bytes32[] memory publicInputs) = abi.decode(_signature, (bytes, bytes32[]));
+
+    IVerifier(verifier).verify(proof, publicInputs);
+    if (hashed_identifiers != keccak256(abi.encodePacked(publicInputs))) {
+      revert("Invalid signature");
+    }
     return EIP1271_MAGIC_VALUE;
   }
 

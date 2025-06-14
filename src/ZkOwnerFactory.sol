@@ -18,16 +18,19 @@ contract ZkOwnerFactory {
   uint256 public nonce;
   address public safeProxyFactoryAddress;
   address public safeFallbackHandlerAddress;
+  address public recursiveVerifier;
   mapping(address => uint256) public nonceByDeployer;
 
   constructor(
     bytes memory _implBytecode,
     address _safeProxyFactoryAddress,
-    address _safeFallbackHandlerAddress
+    address _safeFallbackHandlerAddress,
+    address _verifier
   ) {
     implBytecode = _implBytecode;
     safeProxyFactoryAddress = _safeProxyFactoryAddress;
     safeFallbackHandlerAddress = _safeFallbackHandlerAddress;
+    recursiveVerifier = _verifier;
   }
 
   //for testing purposes
@@ -57,8 +60,8 @@ contract ZkOwnerFactory {
    * @return deployedAddress The address of the deployed contract
    */
   function deploy(
-    bytes memory initCode,
-    uint256 threshold
+    uint256 threshold, 
+    bytes32[] memory identifiers
   ) public returns (address deployedAddress) /*OnlySigner*/ {
     uint256 lastNonce = nonceByDeployer[msg.sender];
     nonceByDeployer[msg.sender] = lastNonce + 1;
@@ -105,7 +108,7 @@ contract ZkOwnerFactory {
 
     // Initialize ZkOwner
     ZkOwner zkOwner = ZkOwner(deployedAddress);
-    zkOwner.initialize(safeProxyAddress, initCode, threshold);
+    zkOwner.initialize(safeProxyAddress, threshold, recursiveVerifier, identifiers);
     require(
       zkOwner.isInitialized(),
       "ZkOwnerFactory: zk owner initialization failed"

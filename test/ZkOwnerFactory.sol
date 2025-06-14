@@ -11,7 +11,8 @@ contract ZkOwnerFactoryTest is Test {
         zkOwnerFactory = new ZkOwnerFactory(
             bytes(""),
             address(0),
-            address(0)
+            address(0),
+            address(0)            
         );
     }
 
