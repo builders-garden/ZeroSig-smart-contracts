@@ -17,6 +17,7 @@ contract ZkOwnerFactory {
   bytes public implBytecode;
   uint256 public nonce;
   address public safeProxyFactoryAddress;
+  address public safeSingletonAddress;
   address public safeFallbackHandlerAddress;
   address public recursiveVerifier;
   mapping(address => uint256) public nonceByDeployer;
@@ -24,11 +25,13 @@ contract ZkOwnerFactory {
   constructor(
     bytes memory _implBytecode,
     address _safeProxyFactoryAddress,
+    address _safeSingletonAddress,
     address _safeFallbackHandlerAddress,
     address _verifier
   ) {
     implBytecode = _implBytecode;
     safeProxyFactoryAddress = _safeProxyFactoryAddress;
+    safeSingletonAddress = _safeSingletonAddress;
     safeFallbackHandlerAddress = _safeFallbackHandlerAddress;
     recursiveVerifier = _verifier;
   }
@@ -99,7 +102,7 @@ contract ZkOwnerFactory {
 
     // Deploy the SafeProxy
     SafeProxy safeProxy = SafeProxyFactory(safeProxyFactoryAddress)
-      .createProxyWithNonce(deployedAddress, safeProxyInitCode, 0);
+      .createProxyWithNonce(safeSingletonAddress, safeProxyInitCode, 0);
     address safeProxyAddress = address(safeProxy);
     require(
       safeProxyAddress != address(0),
