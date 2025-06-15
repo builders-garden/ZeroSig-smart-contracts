@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.21;
 
 import { ISignatureValidator } from "./Safe/ISignatureValidator.sol";
-
+import {HonkVerifier} from "./Verifier.sol";
 
 interface IVerifier {
     function verify(bytes calldata _proof, bytes32[] calldata _publicInputs) external view returns (bool);
@@ -34,12 +34,14 @@ contract ZkOwner is ISignatureValidator {
 
   function isValidSignature(
     bytes32 _hash,
-    bytes memory _signature // ( calldata?)
+    bytes calldata _signature
   ) external view override returns (bytes4) {
     
     (bytes memory proof, bytes32[] memory publicInputs) = abi.decode(_signature, (bytes, bytes32[]));
-
+    
+    // Call the verifier through the interface
     IVerifier(verifier).verify(proof, publicInputs);
+    
     if (hashed_identifiers != keccak256(abi.encodePacked(publicInputs))) {
       revert("Invalid signature");
     }
